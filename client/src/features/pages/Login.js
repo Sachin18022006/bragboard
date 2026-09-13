@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '../../context/ToastContext';
 import { API_BASE_URL } from '../../api/config';
+import signinHeadsetImg from '../../assets/signin_headset.jpg';
 import './Login.css';
 
 const API_BASE = API_BASE_URL;
