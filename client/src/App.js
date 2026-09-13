@@ -24,6 +24,7 @@ function App() {
             <Route path="/home" element={<Home />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/Dashboard" element={<Dashboard />} />
+            <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/admin-dashboard" element={<AdminDashboard />} />
             <Route path="/admin/moderation" element={<AdminModeration />} />
             <Route path="/admin/reports" element={<AdminReports />} />
@@ -32,6 +33,8 @@ function App() {
             <Route path="/leaderboard" element={<Leaderboard />} />
             <Route path="/feed" element={<FeedPage />} />
             <Route path="/analytics" element={<AnalyticsPage />} />
+            {/* Catch-all fallback so users never see a blank screen */}
+            <Route path="*" element={<Dashboard />} />
           </Routes>
         </BrowserRouter>
       </ToastProvider>

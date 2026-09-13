@@ -15,6 +15,19 @@ axios.interceptors.request.use((config) => {
   return config;
 });
 
+// Also adapt native window.fetch calls (used by Admin Dashboard and Reports)
+const originalFetch = window.fetch;
+window.fetch = function (input, init) {
+  if (typeof input === 'string') {
+    if (input.startsWith('http://127.0.0.1:8000')) {
+      input = input.replace('http://127.0.0.1:8000', API_BASE_URL);
+    } else if (input.startsWith('http://localhost:8000')) {
+      input = input.replace('http://localhost:8000', API_BASE_URL);
+    }
+  }
+  return originalFetch.call(this, input, init);
+};
+
 const rootElement = document.getElementById('root');
 const root = ReactDOM.createRoot(rootElement);
 
