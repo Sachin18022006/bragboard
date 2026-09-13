@@ -1,0 +1,49 @@
+services:
+  # -------------------------------------------------------------
+  # Backend: FastAPI Python Service (Docker)
+  # -------------------------------------------------------------
+  - type: web
+    name: bragboard-backend
+    env: docker
+    dockerContext: ./server
+    dockerfilePath: ./server/Dockerfile
+    plan: free
+    region: oregon
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: bragboard-db
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+
+  # -------------------------------------------------------------
+  # Frontend: React Application (Static Site)
+  # -------------------------------------------------------------
+  - type: web
+    name: bragboard-frontend
+    env: static
+    buildCommand: cd client && npm install && npm run build
+    staticPublishPath: ./client/build
+    plan: free
+    region: oregon
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: REACT_APP_API_URL
+        fromService:
+          type: web
+          name: bragboard-backend
+          property: host
+
+# ---------------------------------------------------------------
+# Database: Managed PostgreSQL 15 Database
+# ---------------------------------------------------------------
+databases:
+  - name: bragboard-db
+    databaseName: bragboard_db
+    user: bragboard_user
+    plan: free
+    region: oregon

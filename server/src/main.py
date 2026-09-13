@@ -21,6 +21,14 @@ Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="BragBoard API", version="1.0.0")
 
+@app.on_event("startup")
+def startup_db_seed():
+    try:
+        from seed_data import seed
+        seed()
+    except Exception as e:
+        print("Startup seed check:", e)
+
 # Allow frontend dev origin; adjust list as needed
 origins = ["*"]
 
