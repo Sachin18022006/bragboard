@@ -26,7 +26,6 @@ services:
     rootDir: client
     buildCommand: npm install && npm run build
     staticPublishPath: build
-    plan: free
     routes:
       - type: rewrite
         source: /*
