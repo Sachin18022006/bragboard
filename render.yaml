@@ -36,6 +36,16 @@ services:
           type: web
           name: bragboard-backend
           property: host
+      - key: REACT_APP_API_BASE
+        fromService:
+          type: web
+          name: bragboard-backend
+          property: host
+      - key: REACT_APP_API_BASE_URL
+        fromService:
+          type: web
+          name: bragboard-backend
+          property: host
 
 # ---------------------------------------------------------------
 # Database: PostgreSQL Database

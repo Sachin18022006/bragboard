@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { Trash2, Plus, X } from 'lucide-react';
 import axios from 'axios';
 import CreateUserModal from './CreateUserModal';
+import { API_BASE_URL } from '../../api/config';
 
-const API_BASE = process.env.REACT_APP_API_BASE || 'http://127.0.0.1:8000';
+const API_BASE = API_BASE_URL;
 
 // --- DRAWER COMPONENT ---
 const EmployeeDrawer = ({ isOpen, onClose }) => {

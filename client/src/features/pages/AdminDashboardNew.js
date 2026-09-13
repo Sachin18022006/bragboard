@@ -12,8 +12,9 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
+import { API_BASE_URL } from "../../api/config";
 
-const API_BASE = "http://127.0.0.1:8000"; // change 8000 to your FastAPI port
+const API_BASE = API_BASE_URL;
 
 const PEOPLE = ["Alice", "Bob", "Chitra", "David", "Eve", "Francis"];
 

@@ -1,10 +1,10 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '../../context/ToastContext';
-import signinHeadsetImg from '../../assets/signin_headset.jpg';
+import { API_BASE_URL } from '../../api/config';
 import './Login.css';
 
-const API_BASE = process.env.REACT_APP_API_BASE || 'http://127.0.0.1:8000';
+const API_BASE = API_BASE_URL;
 
 const MODES = {
   LOGIN: 'login',

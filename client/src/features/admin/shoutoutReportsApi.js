@@ -1,8 +1,8 @@
 import { jwtDecode } from 'jwt-decode';
+import { API_BASE_URL } from '../../api/config';
 
-// Base URL logic: try to be smart about the /api prefix
-const ENV_BASE = process.env.REACT_APP_API_BASE_URL || 'http://127.0.0.1:8000';
-const ROOT_URL = ENV_BASE.replace(/\/api$/, '');
+// Base URL logic: central API_BASE_URL
+const ROOT_URL = API_BASE_URL;
 const API_URL = ROOT_URL + '/api';
 
 export const getEffectiveAdminId = () => {

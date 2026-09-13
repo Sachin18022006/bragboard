@@ -7,8 +7,9 @@ import StatCard from '../admin/StatsCard';
 import ActivityChart from '../admin/ActivityChart';
 import DepartmentChart from '../admin/DepartmentChart';
 import EmployeeDrawer from '../admin/EmployeeDrawer';
+import { API_BASE_URL as ROOT_API } from '../../api/config';
 
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || "http://127.0.0.1:8000/api";
+const API_BASE_URL = `${ROOT_API}/api`;
 
 const adminAPI = {
   getStats: async () => {

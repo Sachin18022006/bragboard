@@ -3,9 +3,10 @@ import { jwtDecode } from 'jwt-decode';
 import Header from '../layout/Header';
 import { useTheme } from '../../context/ThemeContext';
 import { useToast } from '../../context/ToastContext';
+import { API_BASE_URL } from '../../api/config';
 import './Settings.css';
 
-const API_BASE = process.env.REACT_APP_API_BASE || 'http://127.0.0.1:8000';
+const API_BASE = API_BASE_URL;
 
 function Settings() {
   const [formData, setFormData] = useState({

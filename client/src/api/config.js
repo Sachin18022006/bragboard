@@ -1,4 +1,7 @@
-let detectedUrl = process.env.REACT_APP_API_URL || process.env.REACT_APP_API_BASE_URL;
+let detectedUrl =
+  process.env.REACT_APP_API_URL ||
+  process.env.REACT_APP_API_BASE ||
+  process.env.REACT_APP_API_BASE_URL;
 
 if (!detectedUrl && typeof window !== 'undefined' && window.location.hostname.includes('onrender.com')) {
   detectedUrl = 'https://bragboard-backend.onrender.com';
