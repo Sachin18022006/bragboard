@@ -52,15 +52,7 @@ docker compose up --build -d
 
 ---
 
-## 🔑 Demo Login Accounts
-
-| Role | Email | Password | Access Highlights |
-| :--- | :--- | :--- | :--- |
-| **Super Admin / Employee** | `sachin12345@gmail.com` | `0987654321` | Admin Console, Moderation Queue, Analytics & Feed |
-| **Administrator** | `Adam123@gmail.com` | `12345` | Management Admin, Moderation & Reports |
-| **Employee** | `Ananya123@gmail.com` | `123` | Employee Shoutouts, Reactions & Profile |
-
-*For complete Docker lifecycle commands and troubleshooting, see the [Docker Deployment Guide](./DOCKER_GUIDE.md).*
+*For complete Docker lifecycle commands, configuration, and troubleshooting, see the [Docker Deployment Guide](./DOCKER_GUIDE.md).*
 
 ---
 

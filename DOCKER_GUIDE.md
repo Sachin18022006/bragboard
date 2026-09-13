@@ -50,17 +50,7 @@ You should see all three containers (`bragboard_client`, `bragboard_server`, `br
 
 ---
 
-## 🔑 Demo Sign-In Credentials
 
-The database comes pre-seeded with lively demo data, users, shoutouts, reactions, and reports.
-
-| Role | Email | Password | Access / Permissions |
-| :--- | :--- | :--- | :--- |
-| **Super Admin / Employee** | `sachin12345@gmail.com` | `0987654321` | **Full Admin Console**, Moderation Queue, Analytics & Employee Feed |
-| **Administrator** | `Adam123@gmail.com` | `12345` | Management Admin, Reports & Analytics |
-| **Employee** | `Ananya123@gmail.com` | `123` | Employee Shoutouts, Reactions, Comments & Profile |
-
----
 
 ## 🌐 Application Endpoints
 
