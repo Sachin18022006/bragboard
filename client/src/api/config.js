@@ -4,7 +4,7 @@ let detectedUrl =
   process.env.REACT_APP_API_BASE_URL;
 
 if (!detectedUrl && typeof window !== 'undefined' && window.location.hostname.includes('onrender.com')) {
-  detectedUrl = 'https://bragboard-backend.onrender.com';
+  detectedUrl = 'https://bragboard-backend-itvu.onrender.com';
 }
 
 let rawUrl = (detectedUrl || 'http://127.0.0.1:8000').replace(/\/api\/?$/, '');
