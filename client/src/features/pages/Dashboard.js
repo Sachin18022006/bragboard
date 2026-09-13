@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import axios from 'axios';
 import { jwtDecode } from 'jwt-decode';
 import Header from '../layout/Header';
@@ -7,7 +7,12 @@ import Sidebar from '../components/Sidebar';
 import CreateShoutoutModal from '../components/CreateShoutoutModal';
 import ReportShoutoutModal from '../components/ReportShoutoutModal';
 import ReportedShoutoutsModal from '../components/ReportedShoutoutsModal';
+import { PostSkeleton, StatCardSkeleton } from '../../components/Skeleton';
+import { useToast } from '../../context/ToastContext';
+import { formatRelativeTime } from '../../utils/dateUtils';
 import './Dashboard.css';
+
+const POPULAR_TAGS = ['#excellence', '#teamwork', '#leadership', '#innovation', '#problemsolver', '#peerlearning'];
 
 function Dashboard() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -15,61 +20,101 @@ function Dashboard() {
   const [isViewReportsOpen, setIsViewReportsOpen] = useState(false);
   const [currentShoutoutToReport, setCurrentShoutoutToReport] = useState(null);
 
-  // Mock data for reported shoutouts
   const [reportedShoutouts, setReportedShoutouts] = useState([]);
-
   const [sortBy, setSortBy] = useState('newest');
-
-  /* 
-  Mock data removed.
-  Using API to fetch shoutouts.
-  */
+  const [searchQuery, setSearchQuery] = useState('');
   const [shoutouts, setShoutouts] = useState([]);
-
+  const [loading, setLoading] = useState(true);
   const [currentUserId, setCurrentUserId] = useState(null);
+  const [userName, setUserName] = useState('');
+  const [userEmail, setUserEmail] = useState('');
+  const [refreshWidgetsTrigger, setRefreshWidgetsTrigger] = useState(0);
+
+  // Registered employees state and dropdown visibility
+  const [employees, setEmployees] = useState([]);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const searchContainerRef = useRef(null);
+
+  const { showSuccess, showError } = useToast();
 
   useEffect(() => {
     const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-    console.log("Dashboard useEffect: token found?", !!token);
+    const email = localStorage.getItem('email') || sessionStorage.getItem('email') || '';
+    const storedName = localStorage.getItem('name') || sessionStorage.getItem('name') || '';
+    setUserEmail(email);
+    setUserName(storedName);
+
     if (token) {
       try {
         const decoded = jwtDecode(token);
-        console.log("Dashboard decoded token:", decoded);
-        const userId = decoded.user_id;
-        console.log("Setting currentUserId to:", userId);
-        setCurrentUserId(userId);
+        setCurrentUserId(decoded.user_id);
+        if (decoded.name && !storedName) {
+          setUserName(decoded.name);
+        }
       } catch (e) {
         console.error("Dashboard: Invalid token", e);
       }
-    } else {
-      console.warn("Dashboard: No token found in localStorage or sessionStorage");
     }
     fetchShoutouts();
+    fetchRegisteredEmployees();
+
+    // Close search dropdown on click outside
+    const handleClickOutside = (e) => {
+      if (searchContainerRef.current && !searchContainerRef.current.contains(e.target)) {
+        setIsSearchOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    // Sync widgets and feed when profile photo is updated
+    const handlePhotoUpdate = () => {
+      fetchShoutouts(true);
+      fetchRegisteredEmployees();
+      setRefreshWidgetsTrigger(prev => prev + 1);
+    };
+    window.addEventListener('profilePhotoUpdated', handlePhotoUpdate);
+    window.addEventListener('storage', handlePhotoUpdate);
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      window.removeEventListener('profilePhotoUpdated', handlePhotoUpdate);
+      window.removeEventListener('storage', handlePhotoUpdate);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const fetchShoutouts = async () => {
+  const fetchRegisteredEmployees = async () => {
     try {
+      const response = await axios.get('http://127.0.0.1:8000/users');
+      setEmployees(response.data || []);
+    } catch (err) {
+      console.error("Failed to fetch registered employees:", err);
+    }
+  };
+
+  const fetchShoutouts = async (silent = false) => {
+    try {
+      if (!silent) setLoading(true);
       const token = localStorage.getItem('token') || sessionStorage.getItem('token');
       const config = token ? { headers: { Authorization: `Bearer ${token}` } } : {};
       const response = await axios.get('http://127.0.0.1:8000/shoutouts', config);
-      console.log("Dashboard fetchShoutouts raw response:", response.data);
-      if (response.data.length > 0) {
-        console.log("First shoutout detail:", {
-          likes: response.data[0].likes,
-          comments: response.data[0].comments
-        });
-      }
-      // The UI expects: { id, sender, department, timestamp, message, ... }
-      const formattedShoutouts = response.data.map(item => {
-        const likedByMe = (item.likes || []).some(l => l.user_id === currentUserId || l.id === currentUserId);
+
+      const formattedShoutouts = (response.data || []).map(item => {
+        const likedByMe = (item.likes || []).some(
+          l => l.user_id === currentUserId || l.id === currentUserId
+        );
         return {
           id: item.id,
-          sender: item.sender.name,
-          senderAvatar: '',
-          department: item.sender.department,
-          timestamp: new Date(item.created_at).toLocaleString(),
+          sender: item.sender?.name || 'Anonymous',
+          sender_id: item.sender?.id,
+          senderAvatar: item.sender?.avatar || '',
+          department: item.sender?.department || 'General',
+          title: item.title || 'Shoutout',
+          created_at: item.created_at,
+          timestamp: formatRelativeTime(item.created_at),
           message: item.message,
+          tags: (item.tags || []).map(t => typeof t === 'string' ? t : t.name),
           taggedUsers: (item.recipients || []).map(r => r.name),
+          recipients: item.recipients || [],
           reactions: {
             emoji: 0,
             thumbsUp: (item.likes || []).length,
@@ -82,6 +127,8 @@ function Dashboard() {
       setShoutouts(formattedShoutouts);
     } catch (error) {
       console.error("Error fetching shoutouts:", error);
+    } finally {
+      if (!silent) setLoading(false);
     }
   };
 
@@ -89,55 +136,45 @@ function Dashboard() {
     try {
       const token = localStorage.getItem('token') || sessionStorage.getItem('token');
       if (!token) {
-        alert("Session expired. Please log in again.");
+        if (showError) showError("Session expired. Please log in.");
         window.location.href = "/login";
         return;
       }
       const decoded = jwtDecode(token);
-      // The API expects: { title, message, sender_id, recipient_id, tags }
-      // The modal returns: { message, recipient, tags, ... }
-      // We need to map modal data to API payload.
-      // NOTE: We need numeric IDs for sender/recipient. 
-      // Assuming we can get sender_id from token or user state. 
-      // Recipient selection in modal likely gives us a user object or ID.
-
-      // Use a default recipient ID for now if not selected, or ensure modal provides it.
-      // This is a critical integration point: getting the recipient's ID.
-      // For now, let's assume the backend handles basic validation.
 
       const payload = {
-        title: "Shoutout",
+        title: newShoutout.title || "Recognition Shoutout",
         message: newShoutout.message,
-        sender_id: Number(decoded.user_id || 1),
-        recipient_id: Number(newShoutout.recipientId || 2),
-        tags: newShoutout.tags || []
+        sender_id: Number(decoded.user_id || currentUserId || 1),
+        recipient_id: Number(newShoutout.recipientId || 1),
+        tags: newShoutout.taggedUsers || []
       };
 
-      const config = token ? { headers: { Authorization: `Bearer ${token}` } } : {};
-      console.log("Creating shoutout with payload:", payload);
-      const response = await axios.post('http://127.0.0.1:8000/shoutouts', payload, config);
-      console.log("Shoutout creation response:", response.data);
+      const config = { headers: { Authorization: `Bearer ${token}` } };
+      await axios.post('http://127.0.0.1:8000/shoutouts', payload, config);
 
-      // Add new shoutout to list (re-fetch or append)
-      await fetchShoutouts();
+      if (showSuccess) showSuccess("Shoutout published successfully!");
       setIsCreateModalOpen(false);
-      alert("Shoutout posted successfully!");
+      fetchShoutouts(true);
+      setRefreshWidgetsTrigger(prev => prev + 1);
     } catch (error) {
       console.error("Failed to create shoutout", error);
-      const errorDetail = error.response?.data?.detail
-        ? JSON.stringify(error.response.data.detail)
-        : (error.response?.data?.message || error.message);
-
-      // Suppress alert for generic "Network Error" as the backend often succeeds 
-      // but connection is lost during transient server restarts or high latency.
-      if (errorDetail !== "Network Error") {
-        alert(`Failed to create shoutout: ${errorDetail}`);
-      } else {
-        // Silently close modal and refresh as it likely succeeded
-        setIsCreateModalOpen(false);
-        fetchShoutouts();
-      }
+      setIsCreateModalOpen(false);
+      fetchShoutouts(true);
     }
+  };
+
+  const handleDeleteShoutout = (deletedId) => {
+    // Instant real-time UI removal
+    setShoutouts((prev) => prev.filter((s) => s.id !== deletedId));
+    setRefreshWidgetsTrigger((prev) => prev + 1);
+    fetchShoutouts(true);
+  };
+
+  const handleInteraction = () => {
+    // Real-time background sync for comments and likes
+    setRefreshWidgetsTrigger((prev) => prev + 1);
+    fetchShoutouts(true);
   };
 
   const handleReportClick = (shoutout) => {
@@ -151,7 +188,7 @@ function Dashboard() {
       if (!token) return;
       const decoded = jwtDecode(token);
       const response = await axios.get(`http://127.0.0.1:8000/api/shoutout-reports/my-reports?reporter_id=${decoded.user_id}`);
-      setReportedShoutouts(response.data);
+      setReportedShoutouts(response.data || []);
     } catch (error) {
       console.error("Error fetching my reports:", error);
     }
@@ -165,131 +202,318 @@ function Dashboard() {
 
       const payload = {
         shoutout_id: currentShoutoutToReport.id,
-        reason: reportData.category, // Backend uses 'reason' for category
-        description: reportData.reason // Backend uses 'description' for details
+        reason: reportData.category,
+        description: reportData.reason
       };
 
       await axios.post(`http://127.0.0.1:8000/api/shoutout-reports?reporter_id=${decoded.user_id}`, payload);
 
       setIsReportModalOpen(false);
       setCurrentShoutoutToReport(null);
-      alert('Report submitted successfully!');
-      fetchMyReports(); // Update the list
+      if (showSuccess) showSuccess('Report submitted for review.');
+      fetchMyReports();
     } catch (error) {
       console.error("Failed to submit report:", error);
-      alert("Failed to submit report. Please try again.");
+      if (showError) showError("Failed to submit report.");
     }
   };
 
-  const getSortedShoutouts = () => {
-    const shoutoutsCopy = [...shoutouts];
-    if (sortBy === 'department') {
-      return shoutoutsCopy.sort((a, b) => {
-        const deptA = a.department || '';
-        const deptB = b.department || '';
-        return deptA.localeCompare(deptB);
+  // Comprehensive Real-Time Filter and Sort for Shoutouts
+  const filteredAndSortedShoutouts = useMemo(() => {
+    let list = [...shoutouts];
+
+    if (searchQuery.trim()) {
+      const rawQ = searchQuery.toLowerCase().trim();
+      const cleanQ = rawQ.replace(/^[@#]/, '');
+      list = list.filter((s) => {
+        const msg = (s.message || '').toLowerCase();
+        const title = (s.title || '').toLowerCase();
+        const sender = (s.sender || '').toLowerCase();
+        const dept = (s.department || '').toLowerCase();
+        const recipients = (s.taggedUsers || []).map((u) => (u || '').toLowerCase());
+        const tags = (s.tags || []).map((t) => (typeof t === 'string' ? t : t.name || '').toLowerCase());
+
+        return (
+          msg.includes(rawQ) || msg.includes(cleanQ) ||
+          title.includes(rawQ) || title.includes(cleanQ) ||
+          sender.includes(rawQ) || sender.includes(cleanQ) ||
+          dept.includes(rawQ) || dept.includes(cleanQ) ||
+          recipients.some((u) => u.includes(rawQ) || u.includes(cleanQ)) ||
+          tags.some((t) => t.includes(rawQ) || t.includes(cleanQ))
+        );
       });
     }
-    // Default to newest (assuming id or original order reflects timestamp for mock data)
-    return shoutoutsCopy;
+
+    if (sortBy === 'department') {
+      list.sort((a, b) => (a.department || '').localeCompare(b.department || ''));
+    } else if (sortBy === 'newest') {
+      list.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+    }
+
+    return list;
+  }, [shoutouts, searchQuery, sortBy]);
+
+  // Autocomplete Suggestions for Registered Employees & Tags
+  const matchingEmployees = useMemo(() => {
+    if (!searchQuery.trim()) {
+      return employees.slice(0, 8);
+    }
+    const q = searchQuery.toLowerCase().trim().replace(/^[@#]/, '');
+    return employees.filter(emp =>
+      (emp.name || '').toLowerCase().includes(q) ||
+      (emp.department || '').toLowerCase().includes(q) ||
+      (emp.email || '').toLowerCase().includes(q)
+    );
+  }, [employees, searchQuery]);
+
+  const matchingTags = useMemo(() => {
+    if (!searchQuery.trim()) {
+      return POPULAR_TAGS;
+    }
+    const q = searchQuery.toLowerCase().trim().replace(/^[@#]/, '');
+    return POPULAR_TAGS.filter(tag => tag.toLowerCase().includes(q));
+  }, [searchQuery]);
+
+  const handleSelectEmployee = (emp) => {
+    setSearchQuery(emp.name);
+    setIsSearchOpen(false);
   };
+
+  const handleSelectTag = (tag) => {
+    setSearchQuery(tag);
+    setIsSearchOpen(false);
+  };
+
+  // Derived KPI Stats
+  const totalShoutoutsCount = shoutouts.length;
+  const totalReactionsCount = shoutouts.reduce((acc, s) => acc + (s.reactions?.thumbsUp || 0), 0);
+  const displayName = userName || (userEmail ? userEmail.split('@')[0] : 'Teammate');
 
   return (
     <div className="dashboard-container">
       <Header />
-      <div className="dashboard-content">
+
+      <main className="dashboard-content">
         <div className="dashboard-main">
-          <div className="dashboard-header-section">
-            <h1 className="dashboard-title">Dashboard</h1>
-            <div className="dashboard-actions">
+          {/* Welcome Banner */}
+          <div className="hero-banner">
+            <div className="hero-text">
+              <span className="hero-badge">Workspace Recognition Hub</span>
+              <h1>Welcome back, {displayName}! 👋</h1>
+              <p>Celebrate team victories, highlight core values, and boost team morale.</p>
+            </div>
+            <button
+              className="hero-cta-btn"
+              onClick={() => setIsCreateModalOpen(true)}
+            >
+              ✨ Give Recognition
+            </button>
+          </div>
+
+          {/* KPI Stat Cards */}
+          <div className="kpi-grid">
+            {loading ? (
+              <>
+                <StatCardSkeleton />
+                <StatCardSkeleton />
+                <StatCardSkeleton />
+              </>
+            ) : (
+              <>
+                <div className="kpi-card">
+                  <div className="kpi-header">
+                    <span className="kpi-title">Total Shoutouts</span>
+                    <span className="kpi-icon">📢</span>
+                  </div>
+                  <div className="kpi-value">{totalShoutoutsCount}</div>
+                  <span className="kpi-trend positive">↑ Active this month</span>
+                </div>
+
+                <div className="kpi-card">
+                  <div className="kpi-header">
+                    <span className="kpi-title">Reactions & Likes</span>
+                    <span className="kpi-icon">❤️</span>
+                  </div>
+                  <div className="kpi-value">{totalReactionsCount}</div>
+                  <span className="kpi-trend positive">↑ High engagement</span>
+                </div>
+
+                <div className="kpi-card">
+                  <div className="kpi-header">
+                    <span className="kpi-title">Community Status</span>
+                    <span className="kpi-icon">🏆</span>
+                  </div>
+                  <div className="kpi-value">Top 10%</div>
+                  <span className="kpi-trend neutral">Active Contributor</span>
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Search & Sort Controls Toolbar */}
+          <div className="dashboard-toolbar">
+            <div className="search-bar-wrapper" ref={searchContainerRef}>
+              <svg className="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="11" cy="11" r="8" />
+                <line x1="21" y1="21" x2="16.65" y2="16.65" />
+              </svg>
+              <input
+                type="text"
+                id="bragboard-workspace-search"
+                name="bragboard_workspace_search"
+                autoComplete="off"
+                data-lpignore="true"
+                data-form-type="other"
+                autoCorrect="off"
+                autoCapitalize="none"
+                spellCheck="false"
+                placeholder="Search registered teammates (e.g. Priya, Sachin), tags, or feed..."
+                className="search-input"
+                value={searchQuery}
+                onFocus={() => setIsSearchOpen(true)}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setIsSearchOpen(true);
+                }}
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  className="clear-search-btn"
+                  onClick={() => {
+                    setSearchQuery('');
+                    setIsSearchOpen(false);
+                  }}
+                  title="Clear search"
+                >
+                  ×
+                </button>
+              )}
+
+              {/* Interactive Autocomplete Suggestions Dropdown */}
+              {isSearchOpen && (
+                <div className="search-autocomplete-dropdown">
+                  <div className="search-dropdown-section">
+                    <div className="search-dropdown-title">
+                      <span>👥 Registered Teammates</span>
+                      <span className="search-section-count">({matchingEmployees.length})</span>
+                    </div>
+                    {matchingEmployees.length === 0 ? (
+                      <div className="search-dropdown-empty">No teammates match "{searchQuery}"</div>
+                    ) : (
+                      <div className="search-suggestions-list">
+                        {matchingEmployees.map((emp) => (
+                          <div
+                            key={emp.id}
+                            className="search-suggestion-item"
+                            onMouseDown={() => handleSelectEmployee(emp)}
+                          >
+                            <div className="suggestion-avatar">
+                              {emp.avatar ? (
+                                <img src={emp.avatar} alt={emp.name} className="suggestion-avatar-img" />
+                              ) : (
+                                (emp.name || 'U').substring(0, 2).toUpperCase()
+                              )}
+                            </div>
+                            <div className="suggestion-info">
+                              <span className="suggestion-name">{emp.name}</span>
+                              <span className="suggestion-dept">{emp.department || 'General'}</span>
+                            </div>
+                            <span className="suggestion-action-hint">Filter shoutouts →</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {matchingTags.length > 0 && (
+                    <div className="search-dropdown-section">
+                      <div className="search-dropdown-title">
+                        <span>🏷️ Recognition Tags</span>
+                      </div>
+                      <div className="search-tag-chips">
+                        {matchingTags.map((tag) => (
+                          <button
+                            type="button"
+                            key={tag}
+                            className="search-tag-chip"
+                            onMouseDown={() => handleSelectTag(tag)}
+                          >
+                            {tag}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div className="toolbar-actions">
               <select
                 className="sort-dropdown"
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
-                style={{
-                  padding: '8px 16px',
-                  borderRadius: '20px',
-                  border: '1px solid #e1e1e1',
-                  background: 'white',
-                  cursor: 'pointer',
-                  fontSize: '0.9rem',
-                  fontWeight: '500',
-                  marginRight: '12px'
-                }}
               >
                 <option value="newest">Sort by Date</option>
                 <option value="department">Sort by Department</option>
               </select>
+
               <button
-                className="view-reports-button"
+                className="my-reports-btn"
                 onClick={() => {
                   fetchMyReports();
                   setIsViewReportsOpen(true);
                 }}
-                style={{
-                  padding: '8px 16px',
-                  borderRadius: '20px',
-                  border: '1px solid #e1e1e1',
-                  background: 'white',
-                  cursor: 'pointer',
-                  fontSize: '0.9rem',
-                  fontWeight: '500'
-                }}
               >
-                My Reports
+                📋 My Reports
               </button>
-              <div className="dashboard-search-container">
-                <div className="search-box">
-                  <svg
-                    className="search-icon"
-                    width="20"
-                    height="20"
-                    viewBox="0 0 20 20"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path
-                      d="M9 17A8 8 0 1 0 9 1a8 8 0 0 0 0 16zM19 19l-4.35-4.35"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                  <input
-                    type="text"
-                    placeholder="Search"
-                    className="search-input"
-                  />
-                </div>
-              </div>
             </div>
           </div>
-          <Feed shoutouts={getSortedShoutouts()} onReport={handleReportClick} currentUserId={currentUserId} onInteraction={fetchShoutouts} />
+
+          {/* Feed List with Loading Skeletons */}
+          {loading ? (
+            <div className="skeletons-wrapper">
+              <PostSkeleton />
+              <PostSkeleton />
+            </div>
+          ) : filteredAndSortedShoutouts.length === 0 ? (
+            <div className="empty-search-card">
+              <div className="empty-search-icon">🔍</div>
+              <h3>No shoutouts found</h3>
+              <p>No results matched "{searchQuery}". Try searching for another name, message, department, or tag.</p>
+              {searchQuery && (
+                <button className="reset-search-btn" onClick={() => setSearchQuery('')}>
+                  Clear Search Filter
+                </button>
+              )}
+            </div>
+          ) : (
+            <Feed
+              shoutouts={filteredAndSortedShoutouts}
+              onReport={handleReportClick}
+              currentUserId={currentUserId}
+              onInteraction={handleInteraction}
+              onDelete={handleDeleteShoutout}
+            />
+          )}
         </div>
-        <Sidebar />
-      </div>
+
+        {/* Sidebar Widgets with Real-Time Refresh */}
+        <Sidebar refreshTrigger={refreshWidgetsTrigger} />
+      </main>
+
+      {/* Floating Action Button (FAB) */}
       <button
-        className="create-shoutout-button"
+        className="floating-create-btn"
         onClick={() => setIsCreateModalOpen(true)}
         aria-label="Create Shoutout"
+        title="Give Recognition"
       >
-        <svg
-          width="24"
-          height="24"
-          viewBox="0 0 24 24"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <path
-            d="M12 5v14M5 12h14"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+          <path d="M12 5v14M5 12h14" />
         </svg>
-        <span>Create Shoutout</span>
+        <span className="fab-text">Give Recognition</span>
       </button>
 
       {isCreateModalOpen && (
@@ -318,4 +542,3 @@ function Dashboard() {
 }
 
 export default Dashboard;
-

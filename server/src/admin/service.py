@@ -3,12 +3,12 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 from src.entities.user import User
 from src.entities.todo import Shoutout, shoutout_recipient_table
-from src.entities.shoutout_report import ShoutoutReport
+from src.entities.shoutout_report import ShoutoutReport, ReportStatus
 
 def get_admin_stats(db: Session):
     total_users = db.query(User).count()
     total_shoutouts = db.query(Shoutout).count()
-    pending_reports = db.query(ShoutoutReport).filter(ShoutoutReport.status == "pending").count()
+    pending_reports = db.query(ShoutoutReport).filter(ShoutoutReport.status == ReportStatus.PENDING).count()
     
     # Weekly Activity (7 days)
     seven_days_ago = datetime.utcnow() - timedelta(days=6)

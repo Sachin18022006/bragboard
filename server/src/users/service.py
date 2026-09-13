@@ -6,16 +6,19 @@ from src.auth.schemas import UserCreate
 from src.auth.auth import hash_password
 
 def get_user_by_email(db: Session, email: str):
-    return db.query(User).filter(User.email == email).first()
+    if not email:
+        return None
+    return db.query(User).filter(func.lower(User.email) == func.lower(email.strip())).first()
 
 def create_user(db: Session, user: UserCreate):
     hashed_pwd = hash_password(user.password)
     db_user = User(
         email=user.email,
+        employee_id=user.employee_id,
         name=user.full_name or user.email.split('@')[0],
         password_hash=hashed_pwd,
         role=user.role,
-        department="General" # Default department for now
+        department=user.department or "General"
     )
     db.add(db_user)
     db.commit()
@@ -25,7 +28,7 @@ def create_user(db: Session, user: UserCreate):
 def list_users(db: Session):
     return db.query(User).all()
 
-def get_leaderboard(db: Session, limit: int = 5):
+def get_leaderboard(db: Session, limit: int = 25):
     """
     Returns users ordered by number of shoutouts received.
     """
@@ -41,17 +44,39 @@ def get_leaderboard(db: Session, limit: int = 5):
         desc("score")
     ).limit(limit).all()
     
-    # Format for frontend: { name, score, ... }
+    # Format for frontend: { name, score, department, ... }
     return [
-        {"name": user.name, "score": score, "avatar": "", "id": user.id} 
+        {
+            "name": user.name,
+            "score": score,
+            "avatar": user.avatar or "",
+            "id": user.id,
+            "department": user.department or "General"
+        } 
         for user, score in results
-        if score > 0 # Optional: only show users with score? Or top N regardless.
+        if score > 0
     ]
 
 def get_top_tagged(db: Session, limit: int = 5):
     """
-    Returns users ordered by number of shoutouts received (same as leaderboard for now).
+    Returns users ordered by number of shoutouts received.
     """
-    # Simply reuse leaderboard logic or different metric if 'tagged' means something else (e.g. in message body tags vs recipients).
-    # Based on models, 'recipients' are the main way to 'tag' someone formally.
     return get_leaderboard(db, limit)
+
+def update_user_avatar(db: Session, user_id: int, avatar_data: str):
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        return None
+    user.avatar = avatar_data
+    db.commit()
+    db.refresh(user)
+    return user
+
+def delete_user_avatar(db: Session, user_id: int):
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        return None
+    user.avatar = None
+    db.commit()
+    db.refresh(user)
+    return user

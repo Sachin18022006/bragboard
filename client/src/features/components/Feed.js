@@ -1,7 +1,7 @@
 import FeedPost from './FeedPost';
 import './Feed.css';
 
-function Feed({ shoutouts, onReport, currentUserId, onInteraction }) {
+function Feed({ shoutouts, onReport, currentUserId, onInteraction, onDelete }) {
   return (
     <div className="feed-container">
       {shoutouts.length === 0 ? (
@@ -16,6 +16,7 @@ function Feed({ shoutouts, onReport, currentUserId, onInteraction }) {
             onReport={() => onReport(shoutout)}
             currentUserId={currentUserId}
             onInteraction={onInteraction}
+            onDelete={onDelete}
           />
         ))
       )}

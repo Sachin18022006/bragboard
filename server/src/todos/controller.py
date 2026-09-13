@@ -14,6 +14,10 @@ def api_create(payload: ShoutoutCreate, db: Session = Depends(get_db)):
 def api_list(db: Session = Depends(get_db)):
     return list_shoutouts(db)
 
+@router.get("/reactions/recent", response_model=list[CommentRead])
+def api_recent_reactions(db: Session = Depends(get_db)):
+    return get_recent_reactions(db)
+
 @router.get("/{shoutout_id}", response_model=ShoutoutRead)
 def api_get(shoutout_id: int, db: Session = Depends(get_db)):
     shout = get_shoutout(db, shoutout_id)
@@ -43,7 +47,3 @@ def api_comment(shoutout_id: int, payload: CommentCreate, user_id: int, db: Sess
     if not comment:
         raise HTTPException(status_code=404, detail="Shoutout not found")
     return comment
-
-@router.get("/reactions/recent", response_model=list[CommentRead])
-def api_recent_reactions(db: Session = Depends(get_db)):
-    return get_recent_reactions(db)

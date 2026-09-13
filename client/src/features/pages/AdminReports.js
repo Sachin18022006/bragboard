@@ -2,24 +2,22 @@ import React, { useState, useEffect } from 'react';
 import { FileDown, FileText, Loader2, AlertCircle, RefreshCw } from 'lucide-react';
 import AdminNavbar from '../admin/AdminNavbar';
 import {
-    DEFAULT_ADMIN_ID,
     fetchShoutoutReports,
     exportReports
 } from '../admin/shoutoutReportsApi';
+import { formatExactDateTime, formatExactWithRelative } from '../../utils/dateUtils';
 
 const AdminReports = () => {
     const [reports, setReports] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [isExporting, setIsExporting] = useState(false);
-    const [adminIdInput] = useState(DEFAULT_ADMIN_ID); // Could make editable if needed
-
     const loadReportHistory = async () => {
         setLoading(true);
         setError('');
         try {
-            // In the reports history page, we likely want all reports regardless of status
-            const data = await fetchShoutoutReports({ adminId: adminIdInput });
+            // In the reports history page, we want all reports regardless of status
+            const data = await fetchShoutoutReports();
             setReports(Array.isArray(data) ? data : []);
         } catch (err) {
             setError(err?.message || 'Unable to load report history.');
@@ -30,13 +28,13 @@ const AdminReports = () => {
 
     useEffect(() => {
         loadReportHistory();
-    }, [adminIdInput]);
+    }, []);
 
     const handleExport = async () => {
         setIsExporting(true);
         setError('');
         try {
-            const blob = await exportReports('csv', adminIdInput);
+            const blob = await exportReports('csv');
             const url = window.URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.href = url;
@@ -54,8 +52,7 @@ const AdminReports = () => {
 
     const formatDate = (value) => {
         if (!value) return '—';
-        const date = new Date(value);
-        return isNaN(date.getTime()) ? '—' : date.toLocaleString();
+        return formatExactDateTime(value);
     };
 
     return (
@@ -147,7 +144,9 @@ const AdminReports = () => {
                                                     {report.status}
                                                 </span>
                                             </td>
-                                            <td className="py-4 px-6 text-gray-400">{formatDate(report.created_at)}</td>
+                                            <td className="py-4 px-6 text-gray-400" title={formatExactDateTime(report.created_at, true)}>
+                                                {formatExactWithRelative(report.created_at)}
+                                            </td>
                                             <td className="py-4 px-6 text-gray-400">{formatDate(report.resolved_at)}</td>
                                             <td className="py-4 px-6 text-gray-400 italic">
                                                 {report.resolution_notes || '—'}

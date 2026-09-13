@@ -26,8 +26,16 @@ def login(user: UserLogin, db: Session = Depends(get_db)):
     if not db_user or not verify_password(user.password, db_user.password_hash):
         return {"error": "Invalid credentials"}
     
-    token = create_access_token({"sub": db_user.email, "role": db_user.role, "user_id": db_user.id})
-    return {"access_token": token, "token_type": "bearer", "role": db_user.role}
+    token = create_access_token({"sub": db_user.email, "role": db_user.role, "user_id": db_user.id, "name": db_user.name})
+    return {
+        "access_token": token,
+        "token_type": "bearer",
+        "user_id": db_user.id,
+        "role": db_user.role,
+        "name": db_user.name,
+        "employee_id": db_user.employee_id,
+        "avatar": db_user.avatar or ""
+    }
 
 @router.post("/forgot-password")
 def forgot_password(email: str, db: Session = Depends(get_db)):

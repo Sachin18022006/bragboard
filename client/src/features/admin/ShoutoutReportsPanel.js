@@ -2,11 +2,12 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { AlertCircle, CheckCircle2, Loader2, RefreshCw, ShieldAlert } from 'lucide-react';
 import ResolveReportModal from './ResolveReportModal';
 import {
-  DEFAULT_ADMIN_ID,
+  getEffectiveAdminId,
   fetchShoutoutReports,
   resolveShoutoutReport,
   deleteShoutout,
 } from './shoutoutReportsApi';
+import { formatExactDateTime, formatExactWithRelative } from '../../utils/dateUtils';
 
 const statusClasses = {
   pending: 'text-amber-400 bg-amber-400/10 border border-amber-500/40',
@@ -15,7 +16,7 @@ const statusClasses = {
 };
 
 const ShoutoutReportsPanel = () => {
-  const [adminIdInput, setAdminIdInput] = useState(DEFAULT_ADMIN_ID);
+  const [adminIdInput, setAdminIdInput] = useState(getEffectiveAdminId());
   const [statusFilter, setStatusFilter] = useState('all');
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -24,7 +25,7 @@ const ShoutoutReportsPanel = () => {
   const [isResolving, setIsResolving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(null); // ID of shoutout being deleted
 
-  const adminId = Number(adminIdInput) || DEFAULT_ADMIN_ID;
+  const adminId = Number(adminIdInput) || getEffectiveAdminId();
 
   const loadReports = useCallback(async () => {
     setLoading(true);
@@ -105,8 +106,7 @@ const ShoutoutReportsPanel = () => {
 
   const formatDate = (value) => {
     if (!value) return '—';
-    const date = new Date(value);
-    return Number.isNaN(date.getTime()) ? '—' : date.toLocaleString();
+    return formatExactDateTime(value);
   };
 
   return (
@@ -216,7 +216,9 @@ const ShoutoutReportsPanel = () => {
                       )}
                     </td>
                     <td className="py-3 pr-4">{renderStatusPill(report.status)}</td>
-                    <td className="py-3 pr-4 text-gray-300">{formatDate(report.created_at)}</td>
+                    <td className="py-3 pr-4 text-gray-300" title={formatExactDateTime(report.created_at, true)}>
+                      {formatExactWithRelative(report.created_at)}
+                    </td>
                     <td className="py-3 pr-4 text-gray-300">
                       {report.resolved_at ? (
                         <div>

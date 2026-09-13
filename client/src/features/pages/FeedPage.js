@@ -4,6 +4,7 @@ import { jwtDecode } from 'jwt-decode';
 import Header from '../layout/Header';
 import Feed from '../components/Feed';
 import ReportShoutoutModal from '../components/ReportShoutoutModal';
+import { formatRelativeTime } from '../../utils/dateUtils';
 import './Dashboard.css'; // Reusing dashboard styles for consistent layout
 
 const FeedPage = () => {
@@ -24,11 +25,20 @@ const FeedPage = () => {
             }
         }
         fetchShoutouts();
+
+        const handlePhotoUpdate = () => fetchShoutouts(true);
+        window.addEventListener('profilePhotoUpdated', handlePhotoUpdate);
+        window.addEventListener('storage', handlePhotoUpdate);
+        return () => {
+            window.removeEventListener('profilePhotoUpdated', handlePhotoUpdate);
+            window.removeEventListener('storage', handlePhotoUpdate);
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    const fetchShoutouts = async () => {
+    const fetchShoutouts = async (silent = false) => {
         try {
-            setLoading(true);
+            if (!silent) setLoading(true);
             const token = localStorage.getItem('token') || sessionStorage.getItem('token');
             const config = token ? { headers: { Authorization: `Bearer ${token}` } } : {};
             const response = await axios.get('http://127.0.0.1:8000/shoutouts', config);
@@ -37,12 +47,17 @@ const FeedPage = () => {
                 const likedByMe = (item.likes || []).some(l => l.user_id === currentUserId || l.id === currentUserId);
                 return {
                     id: item.id,
-                    sender: item.sender.name,
-                    senderAvatar: '',
-                    department: item.sender.department,
-                    timestamp: new Date(item.created_at).toLocaleString(),
+                    sender: item.sender?.name || 'Anonymous',
+                    sender_id: item.sender?.id,
+                    senderAvatar: item.sender?.avatar || '',
+                    department: item.sender?.department || 'General',
+                    title: item.title || 'Shoutout',
+                    created_at: item.created_at,
+                    timestamp: formatRelativeTime(item.created_at),
                     message: item.message,
+                    tags: (item.tags || []).map(t => typeof t === 'string' ? t : t.name),
                     taggedUsers: (item.recipients || []).map(r => r.name),
+                    recipients: item.recipients || [],
                     reactions: {
                         emoji: 0,
                         thumbsUp: (item.likes || []).length,
@@ -56,8 +71,13 @@ const FeedPage = () => {
         } catch (error) {
             console.error("Error fetching shoutouts:", error);
         } finally {
-            setLoading(false);
+            if (!silent) setLoading(false);
         }
+    };
+
+    const handleDeleteShoutout = (deletedId) => {
+        setShoutouts(prev => prev.filter(s => s.id !== deletedId));
+        fetchShoutouts(true);
     };
 
     const handleReportClick = (shoutout) => {
@@ -109,7 +129,8 @@ const FeedPage = () => {
                             shoutouts={shoutouts}
                             onReport={handleReportClick}
                             currentUserId={currentUserId}
-                            onInteraction={fetchShoutouts}
+                            onInteraction={() => fetchShoutouts(true)}
+                            onDelete={handleDeleteShoutout}
                         />
                     )}
                 </div>

@@ -7,6 +7,8 @@ class UserCreate(BaseModel):
     email: EmailStr
     password: str
     full_name: str | None = None
+    employee_id: str | None = None
+    department: str | None = "General"
     role: Literal["admin", "user"] = "user"
 
 

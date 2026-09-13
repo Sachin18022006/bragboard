@@ -7,8 +7,6 @@ import StatCard from '../admin/StatsCard';
 import ActivityChart from '../admin/ActivityChart';
 import DepartmentChart from '../admin/DepartmentChart';
 import EmployeeDrawer from '../admin/EmployeeDrawer';
-import ShoutoutReportsPanel from '../admin/ShoutoutReportsPanel';
-
 
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || "http://127.0.0.1:8000/api";
 
@@ -20,23 +18,11 @@ const adminAPI = {
     });
     if (!response.ok) throw new Error("Failed to fetch statistics");
     return response.json();
-  },
-
-  exportReport: async (type, format) => {
-    const token = localStorage.getItem('token');
-    const response = await fetch(`${API_BASE_URL}/admin/export?report_type=${type}&format=${format}`, {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
-    if (!response.ok) throw new Error("Export failed");
-    return response.blob();
   }
 };
 
-
 const AdminDashboard = () => {
   const [isEmployeePanelOpen, setEmployeePanelOpen] = useState(false);
-
 
   const [stats, setStats] = useState({
     total_users: '0',
@@ -46,7 +32,6 @@ const AdminDashboard = () => {
     weekly_activity: [],
     department_stats: []
   });
-
 
   useEffect(() => {
     const loadDashboardData = async () => {
@@ -59,23 +44,6 @@ const AdminDashboard = () => {
     };
     loadDashboardData();
   }, []);
-
-
-  const handleExport = async (type, format) => {
-    try {
-      const blob = await adminAPI.exportReport(type, format);
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', `${type}_report.${format}`);
-      document.body.appendChild(link);
-      link.click();
-      link.parentNode.removeChild(link);
-      window.URL.revokeObjectURL(url);
-    } catch (error) {
-      alert(`Export failed: ${error.message}`);
-    }
-  };
 
   return (
     <div className="min-h-screen bg-gray-950 font-sans text-gray-100 selection:bg-blue-500 selection:text-white">

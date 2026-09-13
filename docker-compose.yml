@@ -1,0 +1,76 @@
+services:
+  # -------------------------------------------------------------
+  # PostgreSQL Database Service
+  # -------------------------------------------------------------
+  db:
+    image: postgres:15-alpine
+    container_name: bragboard_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: bragboard_user
+      POSTGRES_PASSWORD: bragboard_password
+      POSTGRES_DB: bragboard_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bragboard_user -d bragboard_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - bragboard-network
+
+  # -------------------------------------------------------------
+  # FastAPI Backend Service
+  # -------------------------------------------------------------
+  server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: bragboard_server
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - SECRET_KEY=enterprise_super_secret_bragboard_jwt_key_2026
+      - DATABASE_URL=postgresql://bragboard_user:bragboard_password@db:5432/bragboard_db
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - server_data:/app/data
+    networks:
+      - bragboard-network
+
+  # -------------------------------------------------------------
+  # React Frontend (Nginx Production Server)
+  # -------------------------------------------------------------
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+      args:
+        - REACT_APP_API_URL=http://localhost:8000
+    container_name: bragboard_client
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    depends_on:
+      - server
+    networks:
+      - bragboard-network
+
+# ---------------------------------------------------------------
+# Persistent Volumes & Network Definitions
+# ---------------------------------------------------------------
+volumes:
+  postgres_data:
+    driver: local
+  server_data:
+    driver: local
+
+networks:
+  bragboard-network:
+    driver: bridge

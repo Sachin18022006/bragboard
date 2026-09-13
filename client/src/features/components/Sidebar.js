@@ -3,12 +3,12 @@ import TopTaggedWidget from './TopTaggedWidget';
 import RecentReactionsWidget from './RecentReactionsWidget';
 import './Sidebar.css';
 
-function Sidebar() {
+function Sidebar({ refreshTrigger }) {
   return (
     <aside className="dashboard-sidebar">
-      <LeaderboardWidget />
-      <TopTaggedWidget />
-      <RecentReactionsWidget />
+      <LeaderboardWidget refreshTrigger={refreshTrigger} />
+      <TopTaggedWidget refreshTrigger={refreshTrigger} />
+      <RecentReactionsWidget refreshTrigger={refreshTrigger} />
     </aside>
   );
 }

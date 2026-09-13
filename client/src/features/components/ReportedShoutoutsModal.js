@@ -1,3 +1,4 @@
+import { formatExactWithRelative, formatExactDateTime } from '../../utils/dateUtils';
 import './CreateShoutoutModal.css'; // Reusing modal styles
 
 function ReportedShoutoutsModal({ onClose, reports }) {
@@ -23,6 +24,9 @@ function ReportedShoutoutsModal({ onClose, reports }) {
                                     </div>
                                     <div className="report-category">
                                         Reason: {report.reason}
+                                    </div>
+                                    <div className="report-time-stamp" title={formatExactDateTime(report.created_at, true)}>
+                                        Reported on: {formatExactWithRelative(report.created_at)}
                                     </div>
                                     <div className="report-message">
                                         "{report.description || 'No additional details'}"
