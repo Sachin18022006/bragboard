@@ -1,12 +1,14 @@
 # 🚀 BragBoard - Enterprise Peer Recognition & Rewards Platform
 
+[![Live Demo](https://img.shields.io/badge/Live_Demo-bragboard--phi.vercel.app-000000?style=for-the-badge&logo=vercel&logoColor=white)](https://bragboard-phi.vercel.app/)
 [![Docker](https://img.shields.io/badge/Docker-Enabled-2496ED?logo=docker&logoColor=white)](./DOCKER_GUIDE.md)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.100+-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
 [![React](https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=black)](https://react.dev)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-336791?logo=postgresql&logoColor=white)](https://www.postgresql.org)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-**BragBoard** is a modern, full-stack employee recognition platform engineered to boost team engagement, celebrate workplace wins, and deliver actionable engagement analytics for management.
+> 🌐 **Live Production App**: **[https://bragboard-phi.vercel.app](https://bragboard-phi.vercel.app/)**  
+> Deployed 24/7 with a React frontend on **Vercel** and a FastAPI backend with PostgreSQL on **Render**.
 
 ---
 
@@ -24,33 +26,37 @@
 
 ## 🏗️ Tech Stack & Architecture
 
-- **Frontend**: React 18, Nginx, Lucide Icons, Canvas-Confetti, Custom Design System
+- **Frontend**: React 18, Nginx (local) / Vercel (cloud), Lucide Icons, Canvas-Confetti
 - **Backend**: FastAPI, Python 3.11, SQLAlchemy ORM, Pydantic v2, Uvicorn
-- **Database**: PostgreSQL 15 (Alpine) with persistent volume management
+- **Database**: PostgreSQL 15 with persistent volume management
 - **Authentication**: Stateless JWT (`python-jose`) with bcrypt password hashing
-- **DevOps**: Docker, Docker Compose, Multi-stage builds
+- **DevOps**: Docker, Docker Compose, Multi-stage builds, Vercel SPA deployment
 
 ---
 
-## ⚡ Quick Start with Docker
+## 🌐 Live Access & Local Deployment
 
-The fastest way to run BragBoard is with Docker Compose:
+### 1. Live Cloud Application
+- **Frontend (Vercel)**: **[https://bragboard-phi.vercel.app](https://bragboard-phi.vercel.app/)**
+- **Backend API Docs (Swagger)**: [https://bragboard-backend-itvu.onrender.com/docs](https://bragboard-backend-itvu.onrender.com/docs)
+
+---
+
+### 2. Local Setup with Docker (Alternative)
+The entire stack can also be run locally with one command:
 
 ```bash
-# 1. Clone the repository
+# Clone the repository
 git clone https://github.com/Sachin18022006/bragboard.git
 cd bragboard
 
-# 2. Build and launch all containers
+# Build and launch all containers
 docker compose up --build -d
 ```
 
-### Access Ports:
-- **Frontend App**: [http://localhost:3000](http://localhost:3000)
-- **Interactive API Documentation (Swagger)**: [http://localhost:8000/docs](http://localhost:8000/docs)
-- **Database**: Port `5432`
-
----
+- **Local Frontend**: [http://localhost:3000](http://localhost:3000)
+- **Local Swagger API Docs**: [http://localhost:8000/docs](http://localhost:8000/docs)
+- **Local PostgreSQL**: Port `5432`
 
 *For complete Docker lifecycle commands, configuration, and troubleshooting, see the [Docker Deployment Guide](./DOCKER_GUIDE.md).*
 
