@@ -4,9 +4,9 @@ services:
   # -------------------------------------------------------------
   - type: web
     name: bragboard-backend
-    env: docker
-    dockerContext: ./server
-    dockerfilePath: ./server/Dockerfile
+    runtime: docker
+    rootDir: server
+    dockerfilePath: Dockerfile
     plan: free
     region: oregon
     envVars:
@@ -22,9 +22,10 @@ services:
   # -------------------------------------------------------------
   - type: web
     name: bragboard-frontend
-    env: static
-    buildCommand: cd client && npm install && npm run build
-    staticPublishPath: ./client/build
+    runtime: static
+    rootDir: client
+    buildCommand: npm install && npm run build
+    staticPublishPath: build
     plan: free
     region: oregon
     routes:
@@ -39,7 +40,7 @@ services:
           property: host
 
 # ---------------------------------------------------------------
-# Database: Managed PostgreSQL 15 Database
+# Database: PostgreSQL Database
 # ---------------------------------------------------------------
 databases:
   - name: bragboard-db
