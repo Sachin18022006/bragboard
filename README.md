@@ -38,7 +38,7 @@
 
 ### 1. Live Cloud Application
 - **Frontend (Vercel)**: **[https://bragboard-phi.vercel.app](https://bragboard-phi.vercel.app/)**
-- **Backend API Docs (Swagger)**: [https://bragboard-backend-itvu.onrender.com/docs](https://bragboard-backend-itvu.onrender.com/docs)
+- **Backend API Docs (Swagger)**: https://bragboard-79qp.onrender.com/docs
 
 ---
 
