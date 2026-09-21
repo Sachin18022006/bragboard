@@ -55,7 +55,7 @@ docker compose up --build -d
 ```
 
 - **Local Frontend**: [http://localhost:3000](http://localhost:3000)
-- **Local Swagger API Docs**: [http://localhost:8000/docs](http://localhost:8000/docs)
+- **Local Swagger API Docs**: https://bragboard-79qp.onrender.com/docs
 - **Local PostgreSQL**: Port `5432`
 
 *For complete Docker lifecycle commands, configuration, and troubleshooting, see the [Docker Deployment Guide](./DOCKER_GUIDE.md).*
