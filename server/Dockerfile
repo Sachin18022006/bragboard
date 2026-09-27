@@ -27,4 +27,4 @@ COPY . .
 EXPOSE 8000
 
 # Start FastAPI application using Uvicorn (supporting Render dynamic $PORT or default 8000)
-CMD ["sh", "-c", "uvicorn src.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
+CMD ["sh", "-c", "python -m uvicorn src.main:app --host 0.0.0.0 --port ${PORT:-8000}"]

@@ -19,6 +19,10 @@ SQLITE_DATABASE_URL = f"sqlite:///{DATA_DIR / 'app.db'}"
 
 DATABASE_URL = os.getenv("DATABASE_URL", SQLITE_DATABASE_URL)
 
+# Render sets DATABASE_URL with 'postgres://', which SQLAlchemy 1.4+ requires as 'postgresql://'
+if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+
 connect_args = {"check_same_thread": False} if "sqlite" in DATABASE_URL else {}
 
 engine = create_engine(

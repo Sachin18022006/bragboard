@@ -16,18 +16,30 @@ from src.entities.todo import Shoutout, Comment, Tag
 from src.entities.shoutout_report import ShoutoutReport
 from src.entities.notification import Notification
 
-# Create tables
-Base.metadata.create_all(bind=engine)
-
 app = FastAPI(title="BragBoard API", version="1.0.0")
 
 @app.on_event("startup")
 def startup_db_seed():
     try:
+        from src.database.core import create_db_tables
+        create_db_tables()
+        print("Database tables initialized successfully.")
+    except Exception as e:
+        print("Warning: Database table creation issue at startup:", e)
+
+    try:
         from seed_data import seed
         seed()
     except Exception as e:
         print("Startup seed check:", e)
+
+@app.get("/")
+def read_root():
+    return {"status": "ok", "service": "BragBoard API", "version": "1.0.0"}
+
+@app.get("/health")
+def health_check():
+    return {"status": "healthy"}
 
 import os
 
