@@ -29,15 +29,37 @@ def startup_db_seed():
     except Exception as e:
         print("Startup seed check:", e)
 
-# Allow frontend dev origin; adjust list as needed
-origins = ["*"]
+import os
+
+# Explicit Allowed Origins
+allowed_origins = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:8000",
+    "http://127.0.0.1:8000",
+    "https://bragboard-phi.vercel.app",
+]
+
+# Allow custom origins via environment variable (comma-separated)
+env_origins = os.getenv("CORS_ORIGINS", "")
+if env_origins:
+    for origin in env_origins.split(","):
+        origin_clean = origin.strip()
+        if origin_clean and origin_clean not in allowed_origins:
+            allowed_origins.append(origin_clean)
+
+# Match all Vercel preview and production subdomains
+origin_regex = r"^https:\/\/([a-zA-Z0-9_-]+\.)?vercel\.app$"
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=allowed_origins,
+    allow_origin_regex=origin_regex,
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allow_headers=["*"],
+    expose_headers=["*"],
+    max_age=600,
 )
 
 app.include_router(auth_router, prefix="/auth")

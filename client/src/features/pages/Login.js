@@ -59,14 +59,41 @@ function LoginPage() {
   const { showSuccess, showError } = useToast();
 
   const apiPost = async (path, payload) => {
-    const response = await fetch(`${API_BASE}${path}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-    const data = await response.json().catch(() => ({}));
-    if (!response.ok || data.error) {
-      throw new Error(data.error || 'Request failed');
+    const targetUrl = `${API_BASE}${path}`;
+    let response;
+    try {
+      response = await fetch(targetUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+    } catch (networkError) {
+      console.error(`[API Network/CORS Error] Failed request to: ${targetUrl}`, networkError);
+      throw new Error(`Unable to reach backend server. Please verify your internet connection or check backend availability.`);
+    }
+
+    let data = {};
+    try {
+      data = await response.json();
+    } catch (_) {
+      // Body not JSON
+    }
+
+    if (!response.ok) {
+      const serverMessage = data.detail || data.error || data.message;
+      if (serverMessage) {
+        throw new Error(typeof serverMessage === 'string' ? serverMessage : 'Authentication failed');
+      }
+      if (response.status === 401) {
+        throw new Error('Invalid email or password. Please verify your credentials.');
+      }
+      if (response.status === 404) {
+        throw new Error(`Endpoint not found: ${path}`);
+      }
+      if (response.status >= 500) {
+        throw new Error('Backend server error. Please try again later.');
+      }
+      throw new Error(`Request failed (Status ${response.status})`);
     }
     return data;
   };
